@@ -4,9 +4,14 @@ import json
 
 from telegram import Update
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, CommandHandler, ContextTypes
+# from telegram import ReplyKeyboardMarkup, KeyboardButton
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 URL = "URL"
 TOKEN = 'TOKEN'
+
+CONFIRMATION_BUTTON_YES = 'Sim, concordo'
+CONFIRMATION_BUTTON_NO = 'Na verdade não'
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -43,12 +48,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
+    message = update.message.text
+    if update.message.text == CONFIRMATION_BUTTON_YES or update.message.text == CONFIRMATION_BUTTON_NO:
+        message = 'Obrigado pela contribuição!'
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
 
 
 async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_caps = ' '.join(context.args).upper()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_caps)
+
+async def validate_classification(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = "Você concorda com a classificação?"
+    keyboard_reply = InlineKeyboardMarkup(
+        # keyboard=[[CONFIRMATION_BUTTON_YES, CONFIRMATION_BUTTON_NO]],
+        inline_keyboard=[[
+            InlineKeyboardButton(CONFIRMATION_BUTTON_YES, callback_data="1"),
+            InlineKeyboardButton(CONFIRMATION_BUTTON_NO, callback_data="2")
+        ]],
+        # resize_keyboard=True,
+        # one_time_keyboard=True
+    )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=message, reply_markup=keyboard_reply)
 
 
 if __name__ == '__main__':
@@ -62,9 +83,12 @@ if __name__ == '__main__':
         photo
     )
 
+    validation_handler = CommandHandler('val', validate_classification)
+
     application.add_handler(start_handler)
     application.add_handler(echo_handler)
     application.add_handler(caps_handler)
     application.add_handler(photo_handler)
+    application.add_handler(validation_handler)
 
     application.run_polling()
