@@ -17,8 +17,38 @@ Qual classificação você acha que seria mais adequada? digite:
 1 para Madura
 2 para Podre
 
-Obgrigado pela contribuição!
+Obrigado pela contribuição!
 Quer enviar outra foto?
 0 - Não, quero encerrar
 1 - Sim, quero outra
 """
+
+processing = "Processando..."
+
+type_analysis_template = """Tipo: {}
+Confiança: {:.2f}%
+"""
+
+stages_analysis_template = """Estágio de Maturação: {}
+Confiança: {:.2f}%
+"""
+
+full_analysis__template = """{}
+{}
+"""
+
+def replace_classes_translation(old_message: str):
+    message = old_message
+    for old, new in classes_translation.items():
+        message = message.replace(old, new)
+    return message
+
+
+classes_translation = {
+    "BANANA": "Banana 🍌",
+    "ORANGE": "Laranja 🍊",
+    "APPLE": "Maçã 🍎",
+    "RAW": "Verde 🤢",
+    "OVERRIPE": "Podre 🤮",
+    "RIPE": "Maduro 🤩"
+}
