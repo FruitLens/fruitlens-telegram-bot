@@ -48,7 +48,7 @@ classes_translation = {
     "BANANA": "Banana 🍌",
     "ORANGE": "Laranja 🍊",
     "APPLE": "Maçã 🍎",
-    "RAW": "Verde 🤢",
+    "RAW": "Verde 😰",
     "OVERRIPE": "Podre 🤮",
     "RIPE": "Maduro 🤩"
 }
