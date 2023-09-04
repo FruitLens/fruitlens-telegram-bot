@@ -1,6 +1,9 @@
 import logging
 import requests
 import json
+import boto3
+from botocore.exceptions import ClientError
+import os
 
 from telegram import Update
 from telegram.ext import (
@@ -23,6 +26,7 @@ from messages import (
 )
 
 URL = "http://0.0.0.0/predict/fruit"
+URL_BUCKET = "fruit-lens-dream-team-training-data"
 TOKEN = ""
 
 CONFIRMATION_BUTTON_YES = "Sim, concordo"
@@ -42,6 +46,24 @@ async def send_photo(file):
 
     return json.loads(response.text)
 
+async def upload_file(file_name, bucket, object_name=None):
+    if object_name is None:
+        object_name = os.path.basename(file_name)
+
+    s3 = boto3.client('s3')
+    try:
+        s3 = boto3.client('s3')
+        s3.put_object(
+            Bucket=bucket,
+            Key=object_name,
+            Body=file_name
+        )
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
+
+
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = (
@@ -51,7 +73,8 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     obj = await context.bot.get_file(file)
 
-    analysis_result_dict = await send_photo(await obj.download_as_bytearray())
+    file = await obj.download_as_bytearray()
+    analysis_result_dict = await send_photo(file)
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=processing)
 
@@ -76,6 +99,7 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = replace_classes_translation(message)
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+    await upload_file(file, URL_BUCKET, "teste_dos_tests/test.jpeg")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
