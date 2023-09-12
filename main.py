@@ -24,8 +24,9 @@ from messages import (
     processing,
     replace_classes_translation
 )
-
-URL = "http://0.0.0.0/predict/fruit"
+URL = "http://0.0.0.0
+PREDICT = "/predict/fruit"
+SAVE_S3 = "/upload"
 URL_BUCKET = "fruit-lens-dream-team-training-data"
 TOKEN = ""
 
@@ -42,27 +43,36 @@ async def send_photo(file):
     files = [("file", ("output.jpg", file, "image/jpeg"))]
     headers = {}
 
-    response = requests.request("POST", URL, headers=headers, data=payload, files=files)
+    response = requests.request("POST",  URL + PREDICT, headers=headers, data=payload, files=files)
 
     return json.loads(response.text)
 
-async def upload_file(file_name, bucket, object_name=None):
-    if object_name is None:
-        object_name = os.path.basename(file_name)
+# async def upload_file(file_name, bucket, object_name=None):
+#     if object_name is None:
+#         object_name = os.path.basename(file_name)
 
-    s3 = boto3.client('s3')
-    try:
-        s3 = boto3.client('s3')
-        s3.put_object(
-            Bucket=bucket,
-            Key=object_name,
-            Body=file_name
-        )
-    except ClientError as e:
-        logging.error(e)
-        return False
-    return True
+#     s3 = boto3.client('s3')
+#     try:
+#         s3 = boto3.client('s3')
+#         s3.put_object(
+#             Bucket=bucket,
+#             Key=object_name,
+#             Body=file_name
+#         )
+#     except ClientError as e:
+#         logging.error(e)
+#         return False
+#     return True
 
+async def save_photo(file, file_name):
+    payload = {}
+    files = [("file", ("output.jpg", file, "image/jpeg")),
+             ("file_name", file_name)]
+    headers = {}
+
+    response = requests.request("POST", URL + SAVE_S3, headers=headers, data=payload, files=files)
+
+    return json.loads(response.text)
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -99,7 +109,7 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = replace_classes_translation(message)
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
-    await upload_file(file, URL_BUCKET, "teste_dos_tests/test.jpeg")
+    await save_photo(file, update.effective_chat.id + "_" + analysis_result_dict["type"]["name"] + ".jpeg")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
