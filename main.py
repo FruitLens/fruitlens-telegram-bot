@@ -1,8 +1,8 @@
 import logging
 import requests
 import json
-import boto3
-from botocore.exceptions import ClientError
+# import boto3
+# from botocore.exceptions import ClientError
 import os
 
 from telegram import Update
@@ -14,7 +14,6 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# from telegram import ReplyKeyboardMarkup, KeyboardButton
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 from messages import (
@@ -24,7 +23,7 @@ from messages import (
     processing,
     replace_classes_translation
 )
-URL = "http://0.0.0.0
+URL = "http://0.0.0.0"
 PREDICT = "/predict/fruit"
 SAVE_S3 = "/upload"
 URL_BUCKET = "fruit-lens-dream-team-training-data"
@@ -43,9 +42,10 @@ async def send_photo(file):
     files = [("file", ("output.jpg", file, "image/jpeg"))]
     headers = {}
 
-    response = requests.request("POST",  URL + PREDICT, headers=headers, data=payload, files=files)
+    response = requests.request("POST", URL + PREDICT, headers=headers, data=payload, files=files)
 
     return json.loads(response.text)
+
 
 # async def upload_file(file_name, bucket, object_name=None):
 #     if object_name is None:
@@ -70,7 +70,10 @@ async def save_photo(file, file_name):
              ("file_name", file_name)]
     headers = {}
 
-    response = requests.request("POST", URL + SAVE_S3, headers=headers, data=payload, files=files)
+    response = requests.request("POST", URL + SAVE_S3 + f"?file_name={files[-1][-1]}", headers=headers, data=payload,
+                                files=files)
+
+    print(response)
 
     return json.loads(response.text)
 
@@ -109,7 +112,7 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = replace_classes_translation(message)
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
-    await save_photo(file, update.effective_chat.id + "_" + analysis_result_dict["type"]["name"] + ".jpeg")
+    await save_photo(file, f'{update.effective_chat.id}_{analysis_result_dict["type"]["name"]}.jpeg')
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -121,8 +124,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text
     if (
-        update.message.text == CONFIRMATION_BUTTON_YES
-        or update.message.text == CONFIRMATION_BUTTON_NO
+            update.message.text == CONFIRMATION_BUTTON_YES
+            or update.message.text == CONFIRMATION_BUTTON_NO
     ):
         message = "Obrigado pela contribuição!"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
