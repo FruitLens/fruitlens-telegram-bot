@@ -52,3 +52,6 @@ classes_translation = {
     "OVERRIPE": "Podre 🤮",
     "RIPE": "Maduro 🤩"
 }
+
+CONFIRMATION_BUTTON_YES = "Sim, concordo"
+CONFIRMATION_BUTTON_NO = "Na verdade não"

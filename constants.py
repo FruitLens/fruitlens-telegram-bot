@@ -1,0 +1,5 @@
+BASE_URL = "http://0.0.0.0"
+PREDICT = "/predict/fruit"
+SAVE_S3 = "/upload"
+URL_BUCKET = "fruit-lens-dream-team-training-data"
+TOKEN = "6407638967:AAGtPWXPB6dXEmq-k1MfV7ksTCwHbe51KEA"

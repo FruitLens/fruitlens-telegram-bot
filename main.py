@@ -1,6 +1,9 @@
 import logging
 import requests
 import json
+import FruitClassifier
+import RequestSender
+import Handler
 from ClassificationEnums import FruitType, FruitStage, Confirmation
 from telegram.ext import (
     filters,
@@ -19,16 +22,12 @@ from messages import (
     type_analysis_template,
     stages_analysis_template,
     processing,
-    replace_classes_translation
+    replace_classes_translation,
+    CONFIRMATION_BUTTON_YES,
+    CONFIRMATION_BUTTON_NO
 )
-URL = "http://0.0.0.0"
-PREDICT = "/predict/fruit"
-SAVE_S3 = "/upload"
-URL_BUCKET = "fruit-lens-dream-team-training-data"
-TOKEN = ""
 
-CONFIRMATION_BUTTON_YES = "Sim, concordo"
-CONFIRMATION_BUTTON_NO = "Na verdade não"
+from messages import BASE_URL, PREDICT, SAVE_S3, URL_BUCKET, TOKEN
 
 temp_fruit_selection = ""
 
@@ -42,7 +41,7 @@ async def send_photo(file):
     files = [("file", ("output.jpg", file, "image/jpeg"))]
     headers = {}
 
-    response = requests.request("POST", URL + PREDICT, headers=headers, data=payload, files=files)
+    response = requests.request("POST", BASE_URL + PREDICT, headers=headers, data=payload, files=files)
 
     return json.loads(response.text)
 
@@ -54,7 +53,7 @@ async def save_photo(file, file_name, file_id, chat_id):
              ("chat_id", chat_id)]
     headers = {}
 
-    response = requests.request("POST", URL + SAVE_S3 + f"?file_name={files[1][-1]}&file_id={[2][-1]}&chat_id={[3][-1]}",
+    response = requests.request("POST", BASE_URL + SAVE_S3 + f"?file_name={files[1][-1]}&file_id={[2][-1]}&chat_id={[3][-1]}",
         headers=headers,
         data=payload,
         files=files
@@ -66,6 +65,7 @@ async def save_photo(file, file_name, file_id, chat_id):
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    sender = RequestSender()
     file = (
         update.message.photo[-1].file_id
         if len(update.message.photo) > 0
@@ -78,33 +78,18 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=processing)
 
-    message = ""
-    if analysis_result_dict["type"]["name"] == "BANANA":
-        _type = type_analysis_template.format(
-            analysis_result_dict["type"]["name"],
-            analysis_result_dict["type"]["confidence"],
-        )
-        stage = stages_analysis_template.format(
-            analysis_result_dict["stage"]["name"],
-            analysis_result_dict["stage"]["confidence"],
-        )
-
-        message = full_analysis__template.format(_type, stage)
-    else:
-        message = type_analysis_template.format(
-            analysis_result_dict["type"]["name"],
-            analysis_result_dict["type"]["confidence"],
-        )
-
-    message = replace_classes_translation(message)
+    message = replace_classes_translation(
+        sender.define_predict_reponse_obj(analysis_result_dict)
+    )
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
-    # await save_photo(
-    #     file,
-    #     f'{update.effective_chat.id}_{analysis_result_dict["type"]["name"]}.jpeg',
-    #     update.message.photo[-1].file_id,
-    #     update.effective_chat.id
-    # )
+
+    await save_photo(
+        file,
+        f'{update.effective_chat.id}_{analysis_result_dict["type"]["name"]}.jpeg',
+        update.message.photo[-1].file_id,
+        update.effective_chat.id
+    )
     # ,  update.message.photo[-1].file_id
     temp_fruit_selection = analysis_result_dict["type"]["name"]
     await validate_classification(update, context)
@@ -223,16 +208,17 @@ async def validate_fruit_stage(update: Update, context: ContextTypes.DEFAULT_TYP
     
 
 if __name__ == "__main__":
+    handler = Handler()
     application = ApplicationBuilder().token(TOKEN).build()
 
     start_handler = CommandHandler("start", start)
-    echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     caps_handler = CommandHandler("caps", caps)
-    photo_handler = MessageHandler(filters.PHOTO | filters.Document.IMAGE, photo)
+    echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
+    photo_handler = MessageHandler(filters.PHOTO | filters.Document.IMAGE, handler)
 
     validation_handler = CommandHandler("val", validate_classification)
 
-    application.add_handler(CallbackQueryHandler(callback_handler))
+    application.add_handler(CallbackQueryHandler(handler.callback_handler))
 
     application.add_handler(start_handler)
     application.add_handler(echo_handler)
