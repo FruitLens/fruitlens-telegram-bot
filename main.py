@@ -1,98 +1,20 @@
 import logging
-import requests
-import json
-import FruitClassifier
-import RequestSender
-import Handler
-from ClassificationEnums import FruitType, FruitStage, Confirmation
+from Handler import Handler
 from telegram.ext import (
     filters,
     MessageHandler,
     ApplicationBuilder,
     CommandHandler,
     ContextTypes,
-    CallbackQueryHandler,
-    ConversationHandler
+    CallbackQueryHandler
 )
-
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
-
-from messages import (
-    full_analysis__template,
-    type_analysis_template,
-    stages_analysis_template,
-    processing,
-    replace_classes_translation,
-    CONFIRMATION_BUTTON_YES,
-    CONFIRMATION_BUTTON_NO
-)
-
-from messages import BASE_URL, PREDICT, SAVE_S3, URL_BUCKET, TOKEN
-
-temp_fruit_selection = ""
+from telegram import Update
+from messages import CONFIRMATION_BUTTON_YES, CONFIRMATION_BUTTON_NO
+from constants import TOKEN
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-
-
-async def send_photo(file):
-    payload = {}
-    files = [("file", ("output.jpg", file, "image/jpeg"))]
-    headers = {}
-
-    response = requests.request("POST", BASE_URL + PREDICT, headers=headers, data=payload, files=files)
-
-    return json.loads(response.text)
-
-async def save_photo(file, file_name, file_id, chat_id):
-    payload = {}
-    files = [("file", ("output.jpg", file, "image/jpeg")),
-             ("file_name", file_name),
-             ("file_id", file_id),
-             ("chat_id", chat_id)]
-    headers = {}
-
-    response = requests.request("POST", BASE_URL + SAVE_S3 + f"?file_name={files[1][-1]}&file_id={[2][-1]}&chat_id={[3][-1]}",
-        headers=headers,
-        data=payload,
-        files=files
-    )
-
-    print(response)
-
-    return json.loads(response.text)
-
-
-async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    sender = RequestSender()
-    file = (
-        update.message.photo[-1].file_id
-        if len(update.message.photo) > 0
-        else update.message.document.file_id
-    )
-    obj = await context.bot.get_file(file)
-
-    file = await obj.download_as_bytearray()
-    analysis_result_dict = await send_photo(file)
-
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=processing)
-
-    message = replace_classes_translation(
-        sender.define_predict_reponse_obj(analysis_result_dict)
-    )
-
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
-
-    await save_photo(
-        file,
-        f'{update.effective_chat.id}_{analysis_result_dict["type"]["name"]}.jpeg',
-        update.message.photo[-1].file_id,
-        update.effective_chat.id
-    )
-    # ,  update.message.photo[-1].file_id
-    temp_fruit_selection = analysis_result_dict["type"]["name"]
-    await validate_classification(update, context)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -115,98 +37,6 @@ async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_caps = " ".join(context.args).upper()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_caps)
 
-
-async def validate_classification(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = "Você concorda com a classificação?"
-    keyboard_reply = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(CONFIRMATION_BUTTON_YES, callback_data=Confirmation.YES.value),
-                InlineKeyboardButton(CONFIRMATION_BUTTON_NO, callback_data=Confirmation.NO.value)
-            ]
-        ]
-    )
-
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=message, reply_markup=keyboard_reply
-    )
-
-async def select_fruit_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = "Qual a classificação ideal de fruta para a imagem enviada?"
-    keyboard_reply = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton("Banana", callback_data=FruitType.BANANA.value),
-                InlineKeyboardButton("Maça", callback_data=FruitType.APPLE.value),
-                InlineKeyboardButton("Laranja", callback_data=FruitType.ORANGE.value),
-            ]
-        ]
-    )
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=message, reply_markup=keyboard_reply
-    )
-
-async def select_fruit_stage(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = "Qual a classificação ideal de estágio para a imagem enviada?"
-    keyboard_reply = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton("Verde", callback_data=FruitStage.RAM.value)],
-            [InlineKeyboardButton("Quase maduro", callback_data=FruitStage.UNRIPE.value)],
-            [InlineKeyboardButton("Maduro", callback_data=FruitStage.RIPE.value)],
-            [InlineKeyboardButton("Passado", callback_data=FruitStage.OVERRIPE.value)],
-            [InlineKeyboardButton("Podre", callback_data=FruitStage.ROTTEN.value)]
-        ]
-    )
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=message, reply_markup=keyboard_reply
-    )
-
-async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-        
-    if  query.data in [member.value for member in Confirmation]:
-        # validação do caso de conf
-        print("[FRUIT-LENS][CLASSIFICATION] - Validação com a classificação do usuário")
-        await validate_confirm_reponse(update, context, query.data)
-    elif query.data in [member.value for member in FruitType]:
-        print("[FRUIT-LENS][FRUIT-TYPE] - Seleção da fruta do usuário")
-        await validate_fruit_type(update, context, query.data)
-    elif query.data in [member.value for member in FruitStage]:
-        print("[FRUIT-LENS][FRUIT-TYPE] - Seleção da fruta do usuário")
-        await validate_fruit_stage(update, context, query.data)
-    else:
-        print(query.data)
-
-async def send_message(context: ContextTypes.DEFAULT_TYPE, chat_id, message):
-    await context.bot.send_message(chat_id=chat_id, text=message)
-
-async def validate_confirm_reponse(update: Update, context: ContextTypes.DEFAULT_TYPE, response: Confirmation):
-    if response == Confirmation.YES:
-        #  await query.edit_message_text(text=f"Qual seria a classificação ideal?")
-        await send_message(context, chat_id=update.effective_chat.id, message="Obrigado pelo feedback")
-        # TODO: Código para confirmar predição do usuário
-    else:
-        await select_fruit_options(update, context)
-
-async def validate_fruit_type(update: Update, context: ContextTypes.DEFAULT_TYPE, response: FruitType):
-    print(temp_fruit_selection)
-    print(response)
-    if response == FruitType.BANANA and response == temp_fruit_selection:
-        # Salvar fruta
-        await select_fruit_stage(update, context)
-    elif response == temp_fruit_selection:
-        await send_message(context, update.effective_chat.id, message="Nós acertamos e você que errou, vacilão!")
-    else:
-        await send_message(context, update.effective_chat.id, message="Obrigado pela resposta meu irmão!")
-        #Pegar mensagem
-        #Enviar dados para o back a resposta do usuário
-
-async def validate_fruit_stage(update: Update, context: ContextTypes.DEFAULT_TYPE, response: FruitStage):
-    #Salvar no back a os dados
-    await send_message(context, update.effective_chat.id, message="Valeu meu irmão!")
-    
-
 if __name__ == "__main__":
     handler = Handler()
     application = ApplicationBuilder().token(TOKEN).build()
@@ -214,9 +44,7 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     caps_handler = CommandHandler("caps", caps)
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
-    photo_handler = MessageHandler(filters.PHOTO | filters.Document.IMAGE, handler)
-
-    validation_handler = CommandHandler("val", validate_classification)
+    photo_handler = MessageHandler(filters.PHOTO | filters.Document.IMAGE, handler.receive_photo)
 
     application.add_handler(CallbackQueryHandler(handler.callback_handler))
 
@@ -224,6 +52,5 @@ if __name__ == "__main__":
     application.add_handler(echo_handler)
     application.add_handler(caps_handler)
     application.add_handler(photo_handler)
-    application.add_handler(validation_handler)
 
     application.run_polling()

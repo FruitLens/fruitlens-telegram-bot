@@ -8,7 +8,7 @@ from messages import (
 
 class RequestSenderService():
 
-    def define_predict_reponse_obj(fruit_dic):
+    def define_predict_reponse_obj(self, fruit_dic):
         message = ""
         if fruit_dic["type"]["name"] == "BANANA":
             _type = type_analysis_template.format(
@@ -30,6 +30,6 @@ class RequestSenderService():
         
         return message
 
-    async def send_request(url, payload, headers, files, method):
-        response = await requests.request(method, url, headers=headers, data=payload, files=files)
+    async def send_request(self, url, payload, headers, files, method):
+        response = requests.request(method, url, headers=headers, data=payload, files=files)
         return json.loads(response.text)

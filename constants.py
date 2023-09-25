@@ -1,4 +1,4 @@
-BASE_URL = "http://0.0.0.0"
+BASE_URL = "http://34.192.123.123"
 PREDICT = "/predict/fruit"
 SAVE_S3 = "/upload"
 URL_BUCKET = "fruit-lens-dream-team-training-data"
