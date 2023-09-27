@@ -53,5 +53,26 @@ classes_translation = {
     "RIPE": "Maduro 🤩"
 }
 
-CONFIRMATION_BUTTON_YES = "Sim, concordo"
+CONFIRMATION_BUTTON_YES = "Sim, concordo "
 CONFIRMATION_BUTTON_NO = "Na verdade não"
+
+reponse_classes_translation = {
+    "YES": CONFIRMATION_BUTTON_YES,
+    "NO": CONFIRMATION_BUTTON_NO,
+    "BANANA": "Banana 🍌",
+    "ORANGE": "Laranja 🍊",
+    "APPLE": "Maçã 🍎",
+    "RAW": "Verde 😐", 
+    "UNRIPE": "Quase Maduro😏",
+    "OVERRIPE": "Bem Maduro 😳",
+    "RIPE": "Maduro🤩",
+    "ROTTEN": "Podre 🤢" 
+}
+
+THANKS = "Obrigado pela resposta! 👍🙌"
+
+def replace_reponse_classes_translation(old_message: str):
+    message = old_message
+    for old, new in reponse_classes_translation.items():
+        message = message.replace(old, new)
+    return message

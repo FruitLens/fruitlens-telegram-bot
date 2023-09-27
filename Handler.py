@@ -16,7 +16,8 @@ from messages import (
     processing,
     CONFIRMATION_BUTTON_YES,
     CONFIRMATION_BUTTON_NO,
-    replace_classes_translation
+    replace_classes_translation,
+    replace_reponse_classes_translation
 )
 from constants import BASE_URL, PREDICT
 from ClassificationEnums import FruitType, FruitStage, Confirmation
@@ -59,7 +60,7 @@ class Handler:
         await self.validate_classification(update, context)
 
     async def validate_classification(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        message = "Você concorda com a classificação?"
+        message = "Você concorda com a classificação? 👆🏻"
         keyboard_reply = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -76,9 +77,14 @@ class Handler:
     async def callback_handler(self, update: Update, context: CallbackContext):
         query = update.callback_query
         await query.answer()
+        
         # Aqui removemos os botões para o usuário não responder novamente
         await context.bot.edit_message_reply_markup(
             chat_id=query.message.chat_id, message_id=query.message.message_id, reply_markup=None
+        )
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text=f'Sua resposta foi: {replace_reponse_classes_translation(query.data)}'
         )
 
         if  query.data in [member.value for member in Confirmation]:
@@ -125,10 +131,10 @@ class Handler:
         message = "Qual a classificação ideal de estágio para a imagem enviada?"
         keyboard_reply = InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton("Verde", callback_data=FruitStage.RAM.value)],
+                [InlineKeyboardButton("Verde 😐", callback_data=FruitStage.RAM.value)],
                 [InlineKeyboardButton("Quase maduro", callback_data=FruitStage.UNRIPE.value)],
                 [InlineKeyboardButton("Maduro", callback_data=FruitStage.RIPE.value)],
-                [InlineKeyboardButton("Passado", callback_data=FruitStage.OVERRIPE.value)],
+                [InlineKeyboardButton("Bem maduro", callback_data=FruitStage.OVERRIPE.value)],
                 [InlineKeyboardButton("Podre", callback_data=FruitStage.ROTTEN.value)]
             ]
         )
@@ -145,7 +151,7 @@ class Handler:
         elif response == self.temp_fruit_selection:
             await self.send_message(context, update.effective_chat.id, message="Nós acertamos e você que errou, vacilão!")
         else:
-            await self.send_message(context, update.effective_chat.id, message="Obrigado pela resposta meu irmão!")
+            await self.send_message(context, update.effective_chat.id, message="Obrigado pela resposta! 👍🙌")
             #Pegar mensagem
             #Enviar dados para o back a resposta do usuário
 
@@ -154,4 +160,4 @@ class Handler:
             await self.send_message(context, update.effective_chat.id, message="Estagio foi correto!")
         else:
             #Salvar no back a os dados
-            await self.send_message(context, update.effective_chat.id, message="Valeu meu irmão!")
+            await self.send_message(context, update.effective_chat.id, message="Oskei, Obrigueido! 👊🏼🙌")
