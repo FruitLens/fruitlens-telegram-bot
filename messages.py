@@ -37,6 +37,7 @@ full_analysis__template = """{}
 {}
 """
 
+
 def replace_classes_translation(old_message: str):
     message = old_message
     for old, new in classes_translation.items():
@@ -50,7 +51,7 @@ classes_translation = {
     "APPLE": "Maçã 🍎",
     "RAW": "Verde 😰",
     "OVERRIPE": "Podre 🤮",
-    "RIPE": "Maduro 🤩"
+    "RIPE": "Maduro 🤩",
 }
 
 CONFIRMATION_BUTTON_YES = "Sim, concordo "
@@ -62,14 +63,15 @@ reponse_classes_translation = {
     "BANANA": "Banana 🍌",
     "ORANGE": "Laranja 🍊",
     "APPLE": "Maçã 🍎",
-    "RAW": "Verde 😐", 
+    "RAW": "Verde 😐",
     "UNRIPE": "Quase Maduro😏",
     "OVERRIPE": "Bem Maduro 😳",
     "RIPE": "Maduro🤩",
-    "ROTTEN": "Podre 🤢" 
+    "ROTTEN": "Podre 🤢",
 }
 
 THANKS = "Obrigado pela resposta! 👍🙌"
+
 
 def replace_reponse_classes_translation(old_message: str):
     message = old_message

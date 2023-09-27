@@ -3,11 +3,11 @@ import json
 from messages import (
     full_analysis__template,
     type_analysis_template,
-    stages_analysis_template
+    stages_analysis_template,
 )
 
-class RequestSenderService():
 
+class RequestSenderService:
     def define_predict_reponse_obj(self, fruit_dic):
         message = ""
         if fruit_dic["type"]["name"] == "BANANA":
@@ -27,9 +27,11 @@ class RequestSenderService():
                 fruit_dic["type"]["name"],
                 fruit_dic["type"]["confidence"],
             )
-        
+
         return message
 
     async def send_request(self, url, payload, headers, files, method):
-        response = requests.request(method, url, headers=headers, data=payload, files=files)
+        response = requests.request(
+            method, url, headers=headers, data=payload, files=files
+        )
         return json.loads(response.text)

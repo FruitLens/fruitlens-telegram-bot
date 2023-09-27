@@ -6,7 +6,7 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     ContextTypes,
-    CallbackQueryHandler
+    CallbackQueryHandler,
 )
 from telegram import Update
 from messages import CONFIRMATION_BUTTON_YES, CONFIRMATION_BUTTON_NO
@@ -26,8 +26,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text
     if (
-            update.message.text == CONFIRMATION_BUTTON_YES
-            or update.message.text == CONFIRMATION_BUTTON_NO
+        update.message.text == CONFIRMATION_BUTTON_YES
+        or update.message.text == CONFIRMATION_BUTTON_NO
     ):
         message = "Obrigado pela contribuição!"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
@@ -37,6 +37,7 @@ async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_caps = " ".join(context.args).upper()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_caps)
 
+
 if __name__ == "__main__":
     handler = Handler()
     application = ApplicationBuilder().token(TOKEN).build()
@@ -44,7 +45,9 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     caps_handler = CommandHandler("caps", caps)
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
-    photo_handler = MessageHandler(filters.PHOTO | filters.Document.IMAGE, handler.receive_photo)
+    photo_handler = MessageHandler(
+        filters.PHOTO | filters.Document.IMAGE, handler.receive_photo
+    )
 
     application.add_handler(CallbackQueryHandler(handler.callback_handler))
 

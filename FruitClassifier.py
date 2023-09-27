@@ -1,10 +1,6 @@
 from ClassificationEnums import FruitType, FruitStage, Confirmation
 
-class FruitClassifier:
 
+class FruitClassifier:
     fruit_type: FruitType
     fruit_stage: FruitStage
-    
-
-
-    
