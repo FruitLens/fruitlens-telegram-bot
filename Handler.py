@@ -19,7 +19,7 @@ from messages import (
     replace_classes_translation,
     replace_reponse_classes_translation,
 )
-from constants import BASE_URL, PREDICT
+from constants import BASE_URL, PREDICT_URI
 from ClassificationEnums import FruitType, FruitStage, Confirmation
 
 
@@ -32,18 +32,20 @@ class Handler:
 
     async def receive_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         sender = RequestSenderService()
-        file = (
+
+        file_id = (
             update.message.photo[-1].file_id
             if len(update.message.photo) > 0
             else update.message.document.file_id
         )
-        obj = await context.bot.get_file(file)
+        obj = await context.bot.get_file(file_id)
 
         file = await obj.download_as_bytearray()
 
+        print({'telegram_img_id': file_id, 'telegram_conversation_id': update.message.chat_id})
         analysis_result_dict = await sender.send_request(
-            BASE_URL + PREDICT,
-            {},
+            BASE_URL + PREDICT_URI,
+            {'telegram_img_id': file_id, 'telegram_conversation_id': update.message.chat_id},
             {},
             [("file", ("output.jpg", file, "image/jpeg"))],
             "POST",
@@ -54,7 +56,7 @@ class Handler:
         )
         self.temp_fruit_selection = analysis_result_dict["type"]["name"]
         if (self.temp_fruit_selection) == FruitType.BANANA.value:
-            self.temp_stage_selections = analysis_result_dict["stage"]["name"]
+            self.temp_stage_selections = analysis_result_dict["maturation_stage"]["name"]
 
         message = replace_classes_translation(
             sender.define_predict_reponse_obj(analysis_result_dict)
@@ -107,10 +109,10 @@ class Handler:
             )
             await self.validate_confirm_reponse(update, context, query.data)
         elif query.data in [member.value for member in FruitType]:
-            print("[FRUIT-LENS][FRUIT-TYPE] - Seleção da fruta do usuário")
+            print("[FRUIT-LENS][FRUIT-TYPE] - Seleção de tipo de fruta do usuario")
             await self.validate_fruit_type(update, context, query.data)
         elif query.data in [member.value for member in FruitStage]:
-            print("[FRUIT-LENS][FRUIT-TYPE] - Seleção da fruta do usuário")
+            print("[FRUIT-LENS][FRUIT-MATURATION-STAGE] - Seleção de estagio de maturacao de fruta do usuario")
             await self.validate_fruit_stage(update, context, query.data)
         else:
             print(query.data)
