@@ -70,7 +70,10 @@ reponse_classes_translation = {
     "ROTTEN": "Podre 🤢",
 }
 
-THANKS = "Obrigado pela resposta! 👍🙌"
+THANKS_MESSAGE = "Obrigado pela resposta! 👍🙌"
+AGREEMENT_QUESTION = "Você concorda com a classificação? 👆🏻"
+FRUIT_CLASSIFICATION_QUESTION = "Qual a classificação ideal de fruta para a imagem enviada?"
+STAGE_CLASSIFICATION_QUESTION = "Qual a classificação ideal de estágio para a imagem enviada?"
 
 
 def replace_reponse_classes_translation(old_message: str):

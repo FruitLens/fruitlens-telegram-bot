@@ -18,14 +18,16 @@ from messages import (
     CONFIRMATION_BUTTON_NO,
     replace_classes_translation,
     replace_reponse_classes_translation,
+    AGREEMENT_QUESTION,
+    THANKS_MESSAGE,
+    FRUIT_CLASSIFICATION_QUESTION,
+    STAGE_CLASSIFICATION_QUESTION
 )
-from constants import BASE_URL, PREDICT_URI
+from constants import BASE_URL, PREDICT_URI, FEEDBACK_TEMP, KEY
 from ClassificationEnums import FruitType, FruitStage, Confirmation
 
 
 class Handler:
-    temp_fruit_selection = ""
-    temp_stage_selections = ""
 
     def __init__(self):
         pass
@@ -54,9 +56,13 @@ class Handler:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text=processing
         )
-        self.temp_fruit_selection = analysis_result_dict["type"]["name"]
-        if (self.temp_fruit_selection) == FruitType.BANANA.value:
-            self.temp_stage_selections = analysis_result_dict["maturation_stage"]["name"]
+        FEEDBACK_TEMP['model_type'] = analysis_result_dict["type"]["name"]
+        FEEDBACK_TEMP['img_id'] = file_id
+
+        context.chat_data[KEY] = FEEDBACK_TEMP
+        if (analysis_result_dict["type"]["name"]) == FruitType.BANANA.value:
+            FEEDBACK_TEMP['model_stage'] = analysis_result_dict["maturation_stage"]["name"]
+            context.chat_data[KEY] = FEEDBACK_TEMP
 
         message = replace_classes_translation(
             sender.define_predict_reponse_obj(analysis_result_dict)
@@ -68,7 +74,6 @@ class Handler:
     async def validate_classification(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
-        message = "Você concorda com a classificação? 👆🏻"
         keyboard_reply = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -83,7 +88,7 @@ class Handler:
         )
 
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=message, reply_markup=keyboard_reply
+            chat_id=update.effective_chat.id, text=AGREEMENT_QUESTION, reply_markup=keyboard_reply
         )
 
     async def callback_handler(self, update: Update, context: CallbackContext):
@@ -129,16 +134,16 @@ class Handler:
             await self.send_message(
                 context,
                 chat_id=update.effective_chat.id,
-                message="Obrigado pelo feedback",
+                message=THANKS_MESSAGE,
             )
             # TODO: Código para confirmar predição do usuário
+
         else:
             await self.select_fruit_options(update, context)
 
     async def select_fruit_options(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
-        message = "Qual a classificação ideal de fruta para a imagem enviada?"
         keyboard_reply = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -153,13 +158,12 @@ class Handler:
             ]
         )
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=message, reply_markup=keyboard_reply
+            chat_id=update.effective_chat.id, text=FRUIT_CLASSIFICATION_QUESTION, reply_markup=keyboard_reply
         )
 
     async def select_fruit_stage(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
-        message = "Qual a classificação ideal de estágio para a imagem enviada?"
         keyboard_reply = InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton("Verde 😐", callback_data=FruitStage.RAM.value)],
@@ -178,26 +182,26 @@ class Handler:
             ]
         )
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=message, reply_markup=keyboard_reply
+            chat_id=update.effective_chat.id, text=STAGE_CLASSIFICATION_QUESTION, reply_markup=keyboard_reply
         )
 
     async def validate_fruit_type(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE, response: FruitType
     ):
+        fruit_selection = context.chat_data.get(KEY, 'Not found')
         print(response)
-        print(self.temp_fruit_selection)
-        if response == FruitType.BANANA.value and response == self.temp_fruit_selection:
+        if response == FruitType.BANANA.value and response == fruit_selection['model_type']:
             # Salvar fruta
             await self.select_fruit_stage(update, context)
-        elif response == self.temp_fruit_selection:
+        elif response == fruit_selection:
             await self.send_message(
                 context,
                 update.effective_chat.id,
-                message="Nós acertamos e você que errou, vacilão!",
+                message=THANKS_MESSAGE,
             )
         else:
             await self.send_message(
-                context, update.effective_chat.id, message="Obrigado pela resposta! 👍🙌"
+                context, update.effective_chat.id, message=STAGE_CLASSIFICATION_QUESTION
             )
             # Pegar mensagem
             # Enviar dados para o back a resposta do usuário
@@ -205,12 +209,13 @@ class Handler:
     async def validate_fruit_stage(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE, response: FruitStage
     ):
-        if response == self.temp_stage_selections:
+        stage_selection = context.chat_data.get(KEY, 'Not found')
+        if response == stage_selection['model_stage']:
             await self.send_message(
-                context, update.effective_chat.id, message="Estagio foi correto!"
+                context, update.effective_chat.id, message=THANKS_MESSAGE
             )
         else:
             # Salvar no back a os dados
             await self.send_message(
-                context, update.effective_chat.id, message="Oskei, Obrigueido! 👊🏼🙌"
+                context, update.effective_chat.id, message=THANKS_MESSAGE
             )
