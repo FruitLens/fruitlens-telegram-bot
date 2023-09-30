@@ -1,4 +1,5 @@
 import time
+import json
 from RequestSender import RequestSenderService
 from telegram.ext import (
     filters,
@@ -23,17 +24,17 @@ from messages import (
     FRUIT_CLASSIFICATION_QUESTION,
     STAGE_CLASSIFICATION_QUESTION
 )
-from constants import BASE_URL, PREDICT_URI, FEEDBACK_TEMP, KEY
+from constants import BASE_URL, PREDICT_URI, FEEDBACK_TEMP, KEY, FEEDBACK_URI
 from ClassificationEnums import FruitType, FruitStage, Confirmation
 
 
 class Handler:
 
+    sender = RequestSenderService()
     def __init__(self):
         pass
 
     async def receive_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        sender = RequestSenderService()
 
         file_id = (
             update.message.photo[-1].file_id
@@ -45,7 +46,7 @@ class Handler:
         file = await obj.download_as_bytearray()
 
         print({'telegram_img_id': file_id, 'telegram_conversation_id': update.message.chat_id})
-        analysis_result_dict = await sender.send_request(
+        analysis_result_dict = await self.sender.send_request(
             BASE_URL + PREDICT_URI,
             {'telegram_img_id': file_id, 'telegram_conversation_id': update.message.chat_id},
             {},
@@ -65,7 +66,7 @@ class Handler:
             context.chat_data[KEY] = FEEDBACK_TEMP
 
         message = replace_classes_translation(
-            sender.define_predict_reponse_obj(analysis_result_dict)
+            self.sender.define_predict_reponse_obj(analysis_result_dict)
         )
 
         await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
@@ -136,7 +137,16 @@ class Handler:
                 chat_id=update.effective_chat.id,
                 message=THANKS_MESSAGE,
             )
-            # TODO: Código para confirmar predição do usuário
+            chat_data = context.chat_data.get(KEY, 'Not found')
+            payload = {"user_class_fruit_type": "NONE", "user_class_maturation_stage": "NONE", "user_approval": True}
+            response = await self.sender.send_request(
+                BASE_URL + FEEDBACK_URI + f'/{chat_data["img_id"]}',
+                json.dumps(payload, indent = 4),
+                {},
+                [],
+                "PUT",
+            )
+            print(response)
 
         else:
             await self.select_fruit_options(update, context)
@@ -192,6 +202,8 @@ class Handler:
         print(response)
         if response == FruitType.BANANA.value and response == fruit_selection['model_type']:
             # Salvar fruta
+            FEEDBACK_TEMP['user_type'] = response
+            context.chat_data[KEY] = FEEDBACK_TEMP
             await self.select_fruit_stage(update, context)
         elif response == fruit_selection:
             await self.send_message(
