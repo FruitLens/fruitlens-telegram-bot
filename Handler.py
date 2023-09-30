@@ -131,14 +131,13 @@ class Handler:
     ):
         print(response)
         if response == Confirmation.YES.value:
-            #  await query.edit_message_text(text=f"Qual seria a classificação ideal?")
             await self.send_message(
                 context,
                 chat_id=update.effective_chat.id,
                 message=THANKS_MESSAGE,
             )
             chat_data = context.chat_data.get(KEY, 'Not found')
-            payload = {"user_class_fruit_type": "NONE", "user_class_maturation_stage": "NONE", "user_approval": True}
+            payload = {"user_class_fruit_type": None, "user_class_maturation_stage": None, "user_approval": True}
             response = await self.sender.send_request(
                 BASE_URL + FEEDBACK_URI + f'/{chat_data["img_id"]}',
                 json.dumps(payload, indent = 4),
@@ -147,6 +146,7 @@ class Handler:
                 "PUT",
             )
             print(response)
+            print(json.dumps(payload, indent = 4))
 
         else:
             await self.select_fruit_options(update, context)
@@ -201,33 +201,66 @@ class Handler:
         fruit_selection = context.chat_data.get(KEY, 'Not found')
         print(response)
         if response == FruitType.BANANA.value and response == fruit_selection['model_type']:
-            # Salvar fruta
             FEEDBACK_TEMP['user_type'] = response
             context.chat_data[KEY] = FEEDBACK_TEMP
             await self.select_fruit_stage(update, context)
-        elif response == fruit_selection:
-            await self.send_message(
-                context,
-                update.effective_chat.id,
-                message=THANKS_MESSAGE,
-            )
+        # Esse elif faz a mesma coisa que o else TODO: Cnversar com os meninos se deve fazer algo a mais nesse caso
+        # elif response == fruit_selection:
+        #     chat_data = context.chat_data.get(KEY, 'Not found')
+        #     payload = {"user_class_fruit_type": response, "user_class_maturation_stage": None, "user_approval": False}
+        #     response = await self.sender.send_request(
+        #         BASE_URL + FEEDBACK_URI + f'/{chat_data["img_id"]}',
+        #         json.dumps(payload, indent = 4),
+        #         {},
+        #         [],
+        #         "PUT",
+        #     )
+        #     await self.send_message(
+        #         context,
+        #         update.effective_chat.id,
+        #         message=THANKS_MESSAGE,
+        #     )
         else:
-            await self.send_message(
-                context, update.effective_chat.id, message=STAGE_CLASSIFICATION_QUESTION
+            chat_data = context.chat_data.get(KEY, 'Not found')
+            payload = {"user_class_fruit_type": response, "user_class_maturation_stage": None, "user_approval": False}
+            response = await self.sender.send_request(
+                BASE_URL + FEEDBACK_URI + f'/{chat_data["img_id"]}',
+                json.dumps(payload, indent = 4),
+                {},
+                [],
+                "PUT",
             )
-            # Pegar mensagem
-            # Enviar dados para o back a resposta do usuário
+            await self.send_message(
+                context, update.effective_chat.id, message=THANKS_MESSAGE
+            )
 
     async def validate_fruit_stage(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE, response: FruitStage
     ):
-        stage_selection = context.chat_data.get(KEY, 'Not found')
-        if response == stage_selection['model_stage']:
+        chat_data = context.chat_data.get(KEY, 'Not found')
+        # Existe necessidade desse if?
+        if response == chat_data['model_stage']:
+            payload = {"user_class_fruit_type": chat_data["user_type"], "user_class_maturation_stage": response, "user_approval": False}
+            response = await self.sender.send_request(
+                BASE_URL + FEEDBACK_URI + f'/{chat_data["img_id"]}',
+                json.dumps(payload, indent = 4),
+                {},
+                [],
+                "PUT",
+            )
             await self.send_message(
                 context, update.effective_chat.id, message=THANKS_MESSAGE
             )
         else:
             # Salvar no back a os dados
+            payload = {"user_class_fruit_type": chat_data["user_type"], "user_class_maturation_stage": response, "user_approval": False}
+            response = await self.sender.send_request(
+                BASE_URL + FEEDBACK_URI + f'/{chat_data["img_id"]}',
+                json.dumps(payload, indent = 4),
+                {},
+                [],
+                "PUT",
+            )
             await self.send_message(
                 context, update.effective_chat.id, message=THANKS_MESSAGE
             )
