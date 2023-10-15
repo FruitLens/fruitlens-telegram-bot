@@ -137,7 +137,11 @@ class Handler:
                 message=THANKS_MESSAGE,
             )
             chat_data = context.chat_data.get(KEY, 'Not found')
-            payload = {"user_class_fruit_type": None, "user_class_maturation_stage": None, "user_approval": True}
+            payload = {
+                "user_class_fruit_type": chat_data["user_type"],
+                "user_class_maturation_stage": None,
+                "user_approval": True
+            }
             response = await self.sender.send_request(
                 BASE_URL + FEEDBACK_URI + f'/{chat_data["img_id"]}',
                 json.dumps(payload, indent = 4),
