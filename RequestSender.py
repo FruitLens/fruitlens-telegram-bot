@@ -8,7 +8,7 @@ from messages import (
 
 
 class RequestSenderService:
-    def define_predict_reponse_obj(self, fruit_dic):
+    def define_predict_response_obj(self, fruit_dic):
         message = ""
         if fruit_dic["type"]["name"] == "BANANA":
             _type = type_analysis_template.format(

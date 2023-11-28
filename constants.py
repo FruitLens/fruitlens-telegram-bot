@@ -10,5 +10,5 @@ FEEDBACK_TEMP = {
     "user_stage": None,
     "model_stage": None,
     "img_id": None,
-    "approval": None
+    "approval": None,
 }
