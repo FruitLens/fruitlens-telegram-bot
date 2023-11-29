@@ -1,4 +1,4 @@
-BASE_URL = "http://fruitlens-api.htfabpazbthedme2.eastus.azurecontainer.io"
+BASE_URL = "http://fruitlens-api"
 PREDICT_URI = "/api/v1/analyses/predict"
 FEEDBACK_URI = "/api/v1/analyses/feedback"
 URL_BUCKET = "fruit-lens-dream-team-training-data"
